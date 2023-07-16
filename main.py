@@ -6,37 +6,35 @@ import re
 
 # Given a partial file name, returns the most recent matching csv file if it was modified today
 def findCSV(partialName):
-    # Search for matching file names
     matching_files = glob.glob(partialName)
 
-    # Check if any matching files were found
+    # If matching files found, return the most recent one if it was modified today
     if len(matching_files) > 0:
-        # Sort the matching files by modification time in descending order
         sorted_files = sorted(matching_files, key=os.path.getmtime, reverse=True)
-        # Get the modification time of the most recent file
+
         most_recent_modification = os.path.getmtime(sorted_files[0])
-        # Get today's date
+
         today = date.today().strftime('%Y-%m-%d')
-        # Check if the most recent file was modified today
+
         if datetime.fromtimestamp(most_recent_modification).date() == date.fromisoformat(today):
-            # Return the most recent matching file
             return sorted_files[0]
         
     return None
 
 def offlineReporting():
     print("Starting Offline Report...")
+
     offlineCSV = "%_Communications_*.csv"
     path = findCSV(offlineCSV) # Use function to locate appropriate comms data file
 
     if path:
         df = pd.read_csv(path)
 
-        # Get the date of the previous day
+        # Formatting for day, date only
         df['day'] = pd.to_datetime(df['day']).dt.date
-        previous_day = datetime.now().date() - timedelta(days=1)
 
         # Get entries from previous day + desired columns
+        previous_day = datetime.now().date() - timedelta(days=1)
         df_selected = df[df['day'] == previous_day]
 
         selected_columns = ['Serial', 'Name', 'Company']
@@ -48,12 +46,10 @@ def offlineReporting():
         # Aggregate by serial and sort appropriately
         aggregated_df = df_selected.groupby('Serial').first().reset_index()
         aggregated_df = aggregated_df.sort_values(['Company', 'Serial'])
-        
-        # Format previous_day info to use as file header
-        previous_day_formatted = previous_day.strftime("%m/%d/%Y")
 
         # Output report to file, with the date info as first line
         output_file = 'OfflineChargerReport.txt'
+        previous_day_formatted = previous_day.strftime("%m/%d/%Y")
 
         with open(output_file, 'w') as file:
             file.write(previous_day_formatted +" Offline Chargers:" + '\n')
