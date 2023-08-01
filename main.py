@@ -67,14 +67,69 @@ def offlineReporting():
         # Open the .txt file with Notepad
         os.system(f'notepad.exe {output_file}')
         
+        print("Offline Report Done.")
+        
     else:
         print("Recent offline charger data not found.")
 
-    print("Offline Report Done.")
 
 def errorReporting():
+    print("Starting Error Report...")
 
-    print ("Error Report Done")
+    errorsCSV = "Error_Count_*.csv"
+    path = findCSV(errorsCSV) # Use function to locate appropriate comms data file
+
+    if path:
+        df = pd.read_csv(path)
+
+        # Filter to only include DCFCs
+        df = df[df['type'] == 'DCFC']
+
+        # Filter to only include entries from yesterday
+        previous_day = datetime.utcnow().date() - timedelta(days=1)
+        previous_day_str = previous_day.strftime('%Y-%m-%d')
+
+        df = df[df['utcdate'].str.startswith(previous_day_str)]
+
+        # Create a new dataframe with the desired headers: serial, name, company, and codes
+        df = df[['serial', 'name', 'company', 'code']].copy()
+
+        # Group the dataframe by serial and aggregate the codes into one string
+        df['codes'] = df.groupby('serial')['code'].transform(lambda x: ','.join(x))
+        df['codes'] = df['codes'].apply(lambda x: ','.join(set(str(x).split(','))))
+
+        # Drop code column
+        df = df.drop('code', axis=1)
+
+        # Remove anything after the last dash in name (to remove plug type)
+        df['name'] = df['name'].apply(lambda name: re.sub(r'(?i)(\s-|-\s).*$', '', name))
+
+        # Remove duplicate entries
+        df = df.drop_duplicates(keep = 'first')
+
+        # Reset the index and sort by serial
+        df.reset_index(drop=True, inplace=True)
+        df = df.sort_values(['serial'])
+
+        # Output
+        output_file = 'ChargerErrorReport.txt'
+        previous_day_str = previous_day.strftime("%m/%d/%Y")
+        df.to_csv(output_file, index=False, sep='|')
+
+        # Replace the separator in the saved file with " - " for better readability (workaround to single char sep)
+        with open(output_file, 'r') as file:
+            content = file.read()
+            content = content.replace('|', ' - ')
+
+        with open(output_file, 'w') as file:
+            file.write(content)
+
+        # Open the .txt file with Notepad
+        os.system(f'notepad.exe {output_file}')
+        print ("Error Report Done")
+    
+    else:
+        print("Recent charger error data not found.")
 
 def main():
     print ("Working...")
