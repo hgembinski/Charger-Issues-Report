@@ -24,6 +24,8 @@ def findCSV(partialName):
 def offlineReporting():
     print("Starting Offline Report...")
 
+    excluded_serials = ['12000312', '01.O74-00157', 'KINT00016', 'ZEFDUMMY', 'ZEFDUMMY001'] # Serials to ignore (Mostly test units)
+
     offlineCSV = "%_Communications_*.csv"
     path = findCSV(offlineCSV) # Use function to locate appropriate comms data file
 
@@ -46,6 +48,9 @@ def offlineReporting():
         # Aggregate by serial and sort appropriately
         df = df.groupby('Serial').first().reset_index()
         df = df.sort_values(['Company', 'Serial'])
+
+        # Filter out excluded serials
+        df = df[~df['Serial'].isin(excluded_serials)]
 
         # Output report to file, with the date info as first line
         output_file = 'OfflineChargerReport.txt'
