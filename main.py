@@ -35,17 +35,17 @@ def offlineReporting():
 
         # Get entries from previous day + desired columns
         previous_day = datetime.now().date() - timedelta(days=1)
-        df_selected = df[df['day'] == previous_day]
+        df = df[df['day'] == previous_day]
 
         selected_columns = ['Serial', 'Name', 'Company']
-        df_selected = df_selected[selected_columns]
+        df = df[selected_columns]
 
         # Remove anything after the last dash in name (to remove plug type)
-        df_selected['Name'] = df_selected['Name'].apply(lambda name: re.sub(r'(?i)(\s-|-\s).*$', '', name))
+        df['Name'] = df['Name'].apply(lambda name: re.sub(r'(?i)(\s-|-\s).*$', '', name))
 
         # Aggregate by serial and sort appropriately
-        aggregated_df = df_selected.groupby('Serial').first().reset_index()
-        aggregated_df = aggregated_df.sort_values(['Company', 'Serial'])
+        df = df.groupby('Serial').first().reset_index()
+        df = df.sort_values(['Company', 'Serial'])
 
         # Output report to file, with the date info as first line
         output_file = 'OfflineChargerReport.txt'
@@ -54,7 +54,7 @@ def offlineReporting():
         with open(output_file, 'w') as file:
             file.write(previous_day_formatted +" Offline Chargers:" + '\n')
 
-        aggregated_df.to_csv(output_file, index=False,header=False,mode='a', sep='|')
+        df.to_csv(output_file, index=False,header=False,mode='a', sep='|')
 
         # Replace the separator in the saved file with " - " for better readability (workaround to single char sep)
         with open(output_file, 'r') as file:
@@ -82,32 +82,28 @@ def errorReporting():
     if path:
         df = pd.read_csv(path)
 
-        # Filter to only include DCFCs
+        # Filter to only include DCFCs with entries from yesterday
         df = df[df['type'] == 'DCFC']
 
-        # Filter to only include entries from yesterday
         previous_day = datetime.utcnow().date() - timedelta(days=1)
         previous_day_str = previous_day.strftime('%Y-%m-%d')
 
         df = df[df['utcdate'].str.startswith(previous_day_str)]
 
-        # Create a new dataframe with the desired headers: serial, name, company, and codes
+        # Recreate with desired headers: serial, name, company, and code
         df = df[['serial', 'name', 'company', 'code']].copy()
 
-        # Group the dataframe by serial and aggregate the codes into one string
+        # Group the dataframe by serial and aggregate the codes into one column, drop individual code column
         df['codes'] = df.groupby('serial')['code'].transform(lambda x: ','.join(x))
         df['codes'] = df['codes'].apply(lambda x: ','.join(set(str(x).split(','))))
 
-        # Drop code column
         df = df.drop('code', axis=1)
 
         # Remove anything after the last dash in name (to remove plug type)
         df['name'] = df['name'].apply(lambda name: re.sub(r'(?i)(\s-|-\s).*$', '', name))
 
-        # Remove duplicate entries
+        # Remove duplicate entries, reset index, sort by serial
         df = df.drop_duplicates(keep = 'first')
-
-        # Reset the index and sort by serial
         df.reset_index(drop=True, inplace=True)
         df = df.sort_values(['serial'])
 
