@@ -3,6 +3,7 @@ import os
 import pandas as pd
 from datetime import datetime, date, timedelta
 import re
+import shutil
 
 # Given a partial file name, returns the most recent matching csv file if it was modified today
 def findCSV(partialName):
@@ -20,6 +21,37 @@ def findCSV(partialName):
             return sorted_files[0]
         
     return None
+
+# Moves the error + comms logs from downloads folder to project folder
+def moveFiles():
+    df = pd.read_csv('paths.txt') # Get source + project paths
+    source = df.iloc[0,0]
+    destination = df.iloc[1,0]
+
+    # Find comms log file
+    commsCSV = "%_Communications_*.csv"
+    commPath = os.path.join(source,commsCSV)
+    commsFile = findCSV(commPath)
+
+    # Find error log file
+    errorCSV = "Error_Count_*.csv"
+    errorPath = os.path.join(source,errorCSV)
+    errorFile = findCSV(errorPath)
+
+    if (commsFile):
+        shutil.copy2(commsFile, destination)
+
+    else:
+        print("No recent comms log found in downloads.")
+
+    if (errorFile):
+        shutil.copy2(errorFile, destination)
+
+    else:
+        print("No recent error log found in downloads.")
+
+
+
 
 def offlineReporting():
     print("Starting Offline Report...")
@@ -134,6 +166,8 @@ def errorReporting():
 
 def main():
     print ("Working...")
+    moveFiles()
+    
     offlineReporting()
     errorReporting()
 
