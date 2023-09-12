@@ -56,7 +56,7 @@ def moveFiles():
 def offlineReporting():
     print("Starting Offline Report...")
 
-    excluded_serials = ['12000312', '01.O74-00157', 'KINT00016', 'ZEFDUMMY', 'ZEFDUMMY001'] # Serials to ignore (Mostly test units)
+    excluded_serials = ['12000312', '01.O74-00157', 'KINT00016', 'ZEFDUMMY', 'ZEFDUMMY001', '11900514'] # Serials to ignore (Mostly test units)
 
     offlineCSV = "%_Communications_*.csv"
     path = findCSV(offlineCSV) # Use function to locate appropriate comms data file
@@ -172,5 +172,6 @@ def main():
     errorReporting()
 
     print("All Done.")
+    input()
 
 main()
